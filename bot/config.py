@@ -56,7 +56,10 @@ GARRISON_CAP_OF_MINE = 0.20
 # A neutral city costs 40-50 army and repays ~1.6x over a median 242-tick game,
 # against ~2-3x for the same army spent on land. Only worth it once established
 # and clearly affordable.
-CITY_MIN_TICK = 60
+# Archive benchmark (14 ranked games): winners average 0.0 cities at t100 and
+# 0.3 at t200, and the decisive land gap opens in t50-200. City runs during
+# that window divert the biggest stack from the expansion that wins games.
+CITY_MIN_TICK = 250
 CITY_ARMY_MARGIN = 20
 
 # Opponent army rising while their land does not means they are stacking for a
@@ -66,7 +69,9 @@ STACK_RATIO_ALARM = 2.5
 # Winning the economy is not winning: a game surviving 1,200 ticks is a draw.
 # Once there is little neutral land left, drive into enemy territory to find and
 # kill the general rather than shuffling a won board.
-PRESS_MIN_TICK = 250
+# The ladder leader's median win is 358 ticks against our 785: winners hunt as
+# soon as they hold an edge. The entry/stay thresholds keep this safe.
+PRESS_MIN_TICK = 200
 PRESS_NEUTRAL_FLOOR = 12
 # Attacking costs army on every enemy tile crossed, so a press that does not
 # find the general bleeds. One threshold cannot serve both ends: a bot at 0.76x

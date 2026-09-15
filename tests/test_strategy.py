@@ -167,7 +167,7 @@ def test_reserve_never_freezes_the_general():
 
 
 def test_walks_a_big_stack_to_an_affordable_city():
-    frame = blank_frame(tick=200)
+    frame = blank_frame(tick=300)
     general = 10 * W + 10
     city = general + 4 * W
     frame["terrain"][general] = GENERAL
