@@ -234,8 +234,11 @@ def _best_capture(sim, general, reserve, allow_city, exclude=frozenset()):
                 # Taking their tile costs its defenders plus one. That trade
                 # compounds a lead and bleeds a deficit: on equal land we fell
                 # to 1075 army against 1630 by attacking tiles while weaker.
+                # But a tile with one or two on it, typically our own border
+                # they just nibbled, is the best trade on the board either way:
+                # declining those is how SolomINT farmed our periphery.
                 weaker = sim.board.my_score()["army"] < sim.board.foe_score()["army"]
-                value += -25.0 if weaker else 25.0
+                value += 25.0 if defenders <= 2 or not weaker else -25.0
             if sim.terrain[target] == UNSEEN:
                 value += 5.0
             if neutral_city:

@@ -367,6 +367,26 @@ def test_sortie_removes_a_small_stack_despite_a_large_reserve():
     assert moves and moves[0] == {"from": general, "to": general - W, "half": True}, moves
 
 
+def test_retakes_a_nibbled_border_tile_even_when_weaker():
+    """A 1-army enemy tile beside us is the best trade on the board."""
+    frame = blank_frame(tick=300)
+    general = 12 * W + 12
+    frame["terrain"][general] = GENERAL
+    own(frame, general, 5)
+    source = 12 * W + 3
+    own(frame, source, 4)
+    own(frame, source + 1, 1, player=1)
+    frame["terrain"][source - 1] = PLAIN
+    frame["owners"][source - 1] = NEUTRAL
+    frame["armies"][source - 1] = 0
+    frame["visible"][source - 1] = True
+    frame["scores"] = [{"army": 300, "land": 100}, {"army": 500, "land": 120}]
+
+    board = Board(frame, 0)
+    moves, _ = plan(board, 1)
+    assert moves and moves[0] == {"from": source, "to": source + 1, "half": False}, moves
+
+
 def test_skips_neutral_cities_it_cannot_afford():
     frame = blank_frame(tick=200)
     general = 8 * W + 8
