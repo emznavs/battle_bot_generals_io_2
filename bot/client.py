@@ -66,8 +66,10 @@ class ArenaBot:
 
         elif kind == "authenticated":
             log(f"authenticated as {message['name']} ({message['kind']})")
+            # Human challenges block ranked pairing while they run and never
+            # affect Elo, so during a ranked event they only cost games.
             await self._send(
-                socket, {"type": "queue", "enabled": True, "accept_casual": True}
+                socket, {"type": "queue", "enabled": True, "accept_casual": False}
             )
 
         elif kind == "queue_status":
@@ -83,6 +85,12 @@ class ArenaBot:
                 f"{message['players'][1 - self.player]} "
                 f"(ranked={message['ranked']}, phase={message['phase']})"
             )
+            if not message["ranked"]:
+                # Casual games never change Elo and block ranked pairing while
+                # they run; conceding costs nothing and frees the bot at once.
+                log("  casual game: conceding to return to ranked queue")
+                await self._send(socket, {"type": "surrender", "match_id": self.match_id})
+                return False
             await self._send(socket, {"type": "ready", "match_id": self.match_id})
 
         elif kind == "state":
