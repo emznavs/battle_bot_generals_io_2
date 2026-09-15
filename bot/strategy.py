@@ -4,6 +4,7 @@ from .config import (
     CITY_MIN_TICK,
     CONTACT_MID,
     CONTACT_NEAR,
+    GARRISON_SHARE,
     GENERAL_RUN_MIN,
     IMPASSABLE,
     PRESS_ARMY_RATIO,
@@ -104,7 +105,10 @@ def defence_reserve(board, general):
     if not board.enemy_tiles():
         return RESERVE_FAR
 
-    reserve = max(RESERVE_FAR, threat_to(board, general))
+    foe_army = board.foe_score()["army"]
+    reserve = max(
+        RESERVE_FAR, threat_to(board, general), int(GARRISON_SHARE * foe_army)
+    )
 
     dist = board.distances([general])
     nearest = min((dist[i] for i in board.enemy_tiles() if dist[i] >= 0), default=-1)
