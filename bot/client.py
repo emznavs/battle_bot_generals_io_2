@@ -42,8 +42,15 @@ class ArenaBot:
                     async for raw in socket:
                         if await self._handle(socket, json.loads(raw)):
                             return self.results
-            except (OSError, websockets.exceptions.ConnectionClosed) as error:
-                log(f"connection lost ({type(error).__name__}); retry in {backoff}s")
+            # WebSocketException covers a rejected handshake (e.g. a transient
+            # 403 while the arena restarts) as well as a dropped connection.
+            # Only a revoked credential, raised as RuntimeError, should exit.
+            except (
+                OSError,
+                asyncio.TimeoutError,
+                websockets.exceptions.WebSocketException,
+            ) as error:
+                log(f"connection lost ({type(error).__name__}: {error}); retry in {backoff}s")
                 await asyncio.sleep(backoff)
                 backoff = min(backoff * 2, RECONNECT_BACKOFF_MAX)
 

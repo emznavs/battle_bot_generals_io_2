@@ -235,6 +235,45 @@ def _best_capture(sim, general, reserve, allow_city):
     return best_move
 
 
+def _city_run(sim, general, reserve):
+    """Send the biggest stack that can take a neutral city to the nearest one.
+
+    Both generals produce identically, so in the long games our garrison now
+    produces, cities are the only production edge. A five-tick walk forgoes
+    five tiles; a city returns that within twenty ticks and keeps paying.
+    """
+    known = sim.board.raw_armies
+    cities = [
+        index
+        for index, code in enumerate(sim.terrain)
+        if code == CITY
+        and sim.owners[index] not in (sim.me, sim.foe)
+        and known[index] is not None
+    ]
+    if not cities:
+        return None
+    dist = sim.board.distances(cities)
+    best = None
+    for source in sim.my_tiles():
+        if sim.armies[source] < 2 or dist[source] < 1:
+            continue
+        half = _split(sim, source, general, reserve)
+        if half is None:
+            continue
+        path = sim.board.path_from(source, dist)
+        if len(path) < 2:
+            continue
+        city = path[-1]
+        # One army stays behind per step, and the last step is the attack.
+        arriving = _sent(sim, source, half) - (len(path) - 2)
+        if arriving <= sim.armies[city] + CITY_ARMY_MARGIN:
+            continue
+        surplus = arriving - sim.armies[city]
+        if best is None or surplus > best[0]:
+            best = (surplus, {"from": source, "to": path[1], "half": bool(half)})
+    return best[1] if best else None
+
+
 def _walk(sim, targets, general, reserve, mode="expand", exclude=None):
     """Step the largest usable stack one cell along its shortest path.
 
@@ -274,6 +313,11 @@ def _next_move(sim, general, reserve, mode, focus, allow_city):
             return move
     if mode == "defend":
         move = _walk(sim, [focus], general, reserve, mode, exclude=general)
+        if move:
+            return move
+    # Before captures, or an always-available capture starves the run.
+    if allow_city:
+        move = _city_run(sim, general, reserve)
         if move:
             return move
     move = _best_capture(sim, general, reserve, allow_city)

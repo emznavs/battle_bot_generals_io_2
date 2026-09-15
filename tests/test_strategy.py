@@ -166,6 +166,36 @@ def test_reserve_never_freezes_the_general():
     assert_legal(board, moves)
 
 
+def test_walks_a_big_stack_to_an_affordable_city():
+    frame = blank_frame(tick=200)
+    general = 10 * W + 10
+    city = general + 4 * W
+    frame["terrain"][general] = GENERAL
+    own(frame, general, 100)
+    for step in (1, 2, 3):
+        cell = general + step * W
+        frame["terrain"][cell] = PLAIN
+        frame["owners"][cell] = NEUTRAL
+        frame["armies"][cell] = 0
+        frame["visible"][cell] = True
+    for offset in (-1, 1, -W):
+        frame["terrain"][general + offset] = PLAIN
+        frame["owners"][general + offset] = NEUTRAL
+        frame["armies"][general + offset] = 0
+        frame["visible"][general + offset] = True
+    frame["terrain"][city] = CITY
+    frame["owners"][city] = NEUTRAL
+    frame["armies"][city] = 45
+    frame["visible"][city] = True
+
+    board = Board(frame, 0)
+    moves, mode = plan(board, 4)
+    assert mode == "expand", mode
+    assert moves[0]["to"] == general + W, "first step should head for the city"
+    assert moves[-1]["to"] == city, f"should reach and take the city: {moves}"
+    assert_legal(board, moves)
+
+
 def test_skips_neutral_cities_it_cannot_afford():
     frame = blank_frame(tick=200)
     general = 8 * W + 8
