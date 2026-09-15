@@ -5,7 +5,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from bot.board import Board
 from bot.config import CITY, GENERAL, HIDDEN, MOUNTAIN, NEUTRAL, PLAIN, UNSEEN
-from bot.strategy import decide_mode, defence_reserve, plan
+from bot.strategy import _Sim, _walk, decide_mode, defence_reserve, plan
 
 W = H = 25
 N = W * H
@@ -230,6 +230,28 @@ def test_press_needs_an_edge_to_start_but_less_to_continue():
     ongoing, _ = decide_mode(board, general, False, previous="press")
     assert fresh != "press", f"0.8x is not enough of an edge to start: {fresh}"
     assert ongoing == "press", f"0.8x should still continue an attack: {ongoing}"
+
+
+def test_march_collects_friendly_army_on_the_way():
+    """Pressing takes the fat row; plain expansion takes the straight line."""
+    frame = blank_frame(tick=400)
+    general = 20 * W + 20
+    frame["terrain"][general] = GENERAL
+    own(frame, general, 5)
+    source = 12 * W + 2
+    own(frame, source, 40)
+    target = 12 * W + 6
+    own(frame, target, 3, player=1)
+    for step in (3, 4, 5):
+        own(frame, 12 * W + step, 1)
+    for step in (2, 3, 4, 5, 6):
+        own(frame, 11 * W + step, 30)
+
+    board = Board(frame, 0)
+    straight = _walk(_Sim(board), [target], general, 1, mode="expand")
+    collecting = _walk(_Sim(board), [target], general, 1, mode="press")
+    assert straight["to"] == source + 1, straight
+    assert collecting["to"] == source - W, collecting
 
 
 def test_skips_neutral_cities_it_cannot_afford():

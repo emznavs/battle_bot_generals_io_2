@@ -10,6 +10,7 @@ from .config import (
     GARRISON_SHARE,
     GENERAL_RUN_MIN,
     IMPASSABLE,
+    MARCH_FAT_ARMY,
     PRESS_ENTER_RATIO,
     PRESS_MIN_TICK,
     PRESS_NEUTRAL_FLOOR,
@@ -306,7 +307,27 @@ def _walk(sim, targets, general, reserve, mode="expand", exclude=None):
         if best_score is None or score > best_score:
             best_score = score
             best_move = {"from": source, "to": path[1], "half": bool(half)}
+    if best_move and mode in ("press", "hunt"):
+        step = _collecting_step(sim, best_move["from"], targets)
+        if step is not None:
+            best_move["to"] = step
     return best_move
+
+
+def _collecting_step(sim, source, targets):
+    """First step of the route that absorbs the most friendly army en route.
+
+    Arriving on friendly land adds armies, so a march through our fattest
+    tiles raises its concentration without spending ticks on a gather.
+    """
+
+    def cost(cell):
+        if sim.owners[cell] != sim.me:
+            return 1.0
+        return 1.0 - 0.5 * min(1.0, sim.armies[cell] / MARCH_FAT_ARMY)
+
+    path = sim.board.cheapest_path(source, targets, cost)
+    return path[1] if len(path) >= 2 else None
 
 
 def _next_move(sim, general, reserve, mode, focus, allow_city):

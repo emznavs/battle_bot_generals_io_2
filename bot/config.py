@@ -85,6 +85,11 @@ PRESS_STAY_RATIO = 0.75
 # expansion stall.
 CITY_MAX_WALK = 8
 
+# The two ladder leaders peak at 0.2-0.34 of all army in one stack; we sat at
+# 0.03-0.05. Arriving on friendly land adds armies, so a march routed through
+# our fattest tiles concentrates for free. A tile at this army is half price.
+MARCH_FAT_ARMY = 30
+
 RECONNECT_BACKOFF_MAX = 10
 
 

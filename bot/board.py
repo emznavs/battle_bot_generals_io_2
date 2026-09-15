@@ -1,3 +1,4 @@
+import heapq
 from collections import deque
 from functools import lru_cache
 
@@ -94,6 +95,31 @@ class Board:
                 dist[nxt] = step
                 queue.append(nxt)
         return dist
+
+    def cheapest_path(self, source, targets, step_cost):
+        """Dijkstra from source to the nearest target; step_cost prices entering a cell."""
+        wanted = set(targets)
+        best = {source: 0.0}
+        parent = {}
+        heap = [(0.0, source)]
+        while heap:
+            cost, current = heapq.heappop(heap)
+            if cost > best.get(current, float("inf")):
+                continue
+            if current in wanted and current != source:
+                path = [current]
+                while path[-1] != source:
+                    path.append(parent[path[-1]])
+                return path[::-1]
+            for nxt in self.neighbours[current]:
+                if not self.passable(nxt):
+                    continue
+                candidate = cost + step_cost(nxt)
+                if candidate < best.get(nxt, float("inf")):
+                    best[nxt] = candidate
+                    parent[nxt] = current
+                    heapq.heappush(heap, (candidate, nxt))
+        return []
 
     def path_from(self, source, dist):
         """Walk a distance field downhill from source to its nearest target."""
