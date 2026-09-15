@@ -15,6 +15,7 @@ from .config import (
     GUARD_MIN,
     IMPASSABLE,
     MARCH_FAT_ARMY,
+    PRESS_DOMINANCE,
     PRESS_ENTER_RATIO,
     PRESS_MIN_TICK,
     PRESS_NEUTRAL_FLOOR,
@@ -200,7 +201,7 @@ def _expansion_targets(sim, allow_city):
     return targets
 
 
-def _best_capture(sim, general, reserve, allow_city):
+def _best_capture(sim, general, reserve, allow_city, exclude=frozenset()):
     """Take a new cell this tick, preferring the smallest sufficient source.
 
     Small peripheral stacks are near-useless for anything else, so spending them
@@ -209,7 +210,7 @@ def _best_capture(sim, general, reserve, allow_city):
     best_move = None
     best_value = 0.0
     for source in sim.my_tiles():
-        if sim.armies[source] < 2:
+        if source in exclude or sim.armies[source] < 2:
             continue
         half = _split(sim, source, general, reserve)
         if half is None:
@@ -248,7 +249,7 @@ def _best_capture(sim, general, reserve, allow_city):
     return best_move
 
 
-def _city_run(sim, general, reserve):
+def _city_run(sim, general, reserve, exclude=frozenset()):
     """Send the biggest stack that can take a neutral city to the nearest one.
 
     Both generals produce identically, so in the long games our garrison now
@@ -268,7 +269,7 @@ def _city_run(sim, general, reserve):
     dist = sim.board.distances(cities)
     best = None
     for source in sim.my_tiles():
-        if sim.armies[source] < 2 or not 1 <= dist[source] <= CITY_MAX_WALK:
+        if source in exclude or sim.armies[source] < 2 or not 1 <= dist[source] <= CITY_MAX_WALK:
             continue
         half = _split(sim, source, general, reserve)
         if half is None:
@@ -300,7 +301,7 @@ def _walk(sim, targets, general, reserve, mode="expand", exclude=None):
     best_move = None
     best_score = None
     for source in sim.my_tiles():
-        if source == exclude or sim.armies[source] < 2 or dist[source] < 1:
+        if (exclude and source in exclude) or sim.armies[source] < 2 or dist[source] < 1:
             continue
         # A gathering stack stops beside the general as a mobile guard rather
         # than merging into a garrison the half-move rule would then freeze.
@@ -383,19 +384,40 @@ def _next_move(sim, general, reserve, mode, focus, allow_city):
         move = _walk(sim, [focus], general, reserve, mode)
         if move:
             return move
+    # The guard beside the general stays put for everything but a strike:
+    # otherwise expansion walks it straight back out and gather refetches it.
+    keep = _guards(sim, general)
     if mode in ("defend", "gather"):
-        move = _walk(sim, [focus], general, reserve, mode, exclude=general)
+        move = _walk(sim, [focus], general, reserve, mode, exclude=keep | {general})
         if move:
             return move
     # Before captures, or an always-available capture starves the run.
     if allow_city:
-        move = _city_run(sim, general, reserve)
+        move = _city_run(sim, general, reserve, exclude=keep)
         if move:
             return move
-    move = _best_capture(sim, general, reserve, allow_city)
+    move = _best_capture(sim, general, reserve, allow_city, exclude=keep)
     if move:
         return move
-    return _walk(sim, _expansion_targets(sim, allow_city), general, reserve, mode)
+    return _walk(sim, _expansion_targets(sim, allow_city), general, reserve, mode, exclude=keep)
+
+
+def _guards(sim, general):
+    """Stacks beside the general worth holding back from expansion.
+
+    Only while the opponent is massing or a threat is in range: otherwise a
+    big stack beside the general is the general's own run just leaving.
+    """
+    if general is None:
+        return set()
+    board = sim.board
+    if not (out_concentrated(board) or threat_to(board, general) > 0):
+        return set()
+    return {
+        n
+        for n in sim.neighbours[general]
+        if sim.owners[n] == sim.me and sim.armies[n] >= GUARD_MIN
+    }
 
 
 def decide_mode(board, general, allow_city=False, previous="expand"):
@@ -418,7 +440,12 @@ def decide_mode(board, general, allow_city=False, previous="expand"):
     # Free land is the better investment while it lasts: only press once the
     # map is filling up or the general is actually in sight. A clock alone
     # abandoned 210 open tiles with a winning economy.
-    ready = board.tick >= PRESS_MIN_TICK and (filling or enemy_general is not None)
+    mine, foe = board.my_score(), board.foe_score()
+    dominant = (
+        mine["army"] >= foe["army"] * PRESS_DOMINANCE
+        and mine["land"] >= foe["land"] * PRESS_DOMINANCE
+    )
+    ready = board.tick >= PRESS_MIN_TICK and (filling or dominant or enemy_general is not None)
     ratio = PRESS_STAY_RATIO if previous in ("press", "hunt") else PRESS_ENTER_RATIO
     strong = board.my_score()["army"] >= board.foe_score()["army"] * ratio
     # With no neutral land left, hoarding army only loses slowly: their general

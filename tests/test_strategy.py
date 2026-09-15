@@ -327,6 +327,30 @@ def test_gathers_a_guard_when_the_opponent_is_massing():
     assert mode == "expand", mode
 
 
+def test_expansion_leaves_the_guard_in_place():
+    """A 25-stack beside the general is a guard, not the next expansion run."""
+    frame = blank_frame(tick=400)
+    general = 5 * W + 5
+    frame["terrain"][general] = GENERAL
+    own(frame, general, 30)
+    guard = general + 1
+    own(frame, guard, 25)
+    for cell in (guard + 1, general - 1, general - W, general + W):
+        frame["terrain"][cell] = PLAIN
+        frame["owners"][cell] = NEUTRAL
+        frame["armies"][cell] = 0
+        frame["visible"][cell] = True
+    # Opponent far more concentrated: the guard matters, and it is in place.
+    frame["scores"] = [{"army": 55, "land": 2}, {"army": 200, "land": 2}]
+
+    board = Board(frame, 0)
+    mode, _ = decide_mode(board, general)
+    assert mode == "expand", mode
+    moves, _ = plan(board, 3)
+    assert moves, "the general can still expand"
+    assert all(move["from"] != guard for move in moves), f"guard was moved: {moves}"
+
+
 def test_skips_neutral_cities_it_cannot_afford():
     frame = blank_frame(tick=200)
     general = 8 * W + 8

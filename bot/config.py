@@ -91,6 +91,9 @@ PRESS_NEUTRAL_FLOOR = 12
 # bled it to 0.79x chasing a moving target. Press when the map is filling,
 # meaning neutral room is small relative to our land, or the general is seen.
 PRESS_ROOM_RATIO = 0.6
+# At 2.3x army and 6.8x land we were still expanding at t520. That far ahead
+# a press cannot bleed to parity, and every tick not hunting risks the draw.
+PRESS_DOMINANCE = 2.0
 # Attacking costs army on every enemy tile crossed, so a press that does not
 # find the general bleeds. One threshold cannot serve both ends: a bot at 0.76x
 # never attacked and died to a masser, while a bot that engaged at 1.39x kept
