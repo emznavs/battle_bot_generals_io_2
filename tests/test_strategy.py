@@ -223,6 +223,8 @@ def test_press_needs_an_edge_to_start_but_less_to_continue():
     own(frame, 12 * W + 3, 40)
     for step in range(10, 20):
         own(frame, 12 * W + step, 5, player=1)
+    # Their general is in sight but out of lethal reach: press territory.
+    frame["terrain"][12 * W + 19] = GENERAL
     frame["scores"] = [{"army": 100, "land": 2}, {"army": 125, "land": 10}]
 
     board = Board(frame, 0)
@@ -252,6 +254,23 @@ def test_march_collects_friendly_army_on_the_way():
     collecting = _walk(_Sim(board), [target], general, 1, mode="press")
     assert straight["to"] == source + 1, straight
     assert collecting["to"] == source - W, collecting
+
+
+def test_keeps_expanding_while_the_map_is_still_open():
+    """A lead at t300 with hundreds of neutral tiles is not a reason to press."""
+    frame = blank_frame(tick=300)
+    general = 12 * W + 2
+    frame["terrain"][general] = GENERAL
+    own(frame, general, 80)
+    for step in range(3, 8):
+        own(frame, 12 * W + step, 4)
+    for step in range(14, 20):
+        own(frame, 12 * W + step, 3, player=1)
+    frame["scores"] = [{"army": 320, "land": 100}, {"army": 199, "land": 58}]
+
+    board = Board(frame, 0)
+    mode, _ = decide_mode(board, general, False, previous="expand")
+    assert mode == "expand", f"open map with a lead should expand, got {mode}"
 
 
 def test_skips_neutral_cities_it_cannot_afford():

@@ -14,6 +14,7 @@ from .config import (
     PRESS_ENTER_RATIO,
     PRESS_MIN_TICK,
     PRESS_NEUTRAL_FLOOR,
+    PRESS_ROOM_RATIO,
     PRESS_STAY_RATIO,
     SATELLITE_RUN_MIN,
     RESERVE_FAR,
@@ -366,12 +367,16 @@ def decide_mode(board, general, allow_city=False, previous="expand"):
 
     room = len(_neutral_targets(board, allow_city))
     boxed_in = room < PRESS_NEUTRAL_FLOOR
-    exhausted = boxed_in or board.tick >= PRESS_MIN_TICK
+    filling = room < board.my_score()["land"] * PRESS_ROOM_RATIO
+    # Free land is the better investment while it lasts: only press once the
+    # map is filling up or the general is actually in sight. A clock alone
+    # abandoned 210 open tiles with a winning economy.
+    ready = board.tick >= PRESS_MIN_TICK and (filling or enemy_general is not None)
     ratio = PRESS_STAY_RATIO if previous in ("press", "hunt") else PRESS_ENTER_RATIO
     strong = board.my_score()["army"] >= board.foe_score()["army"] * ratio
     # With no neutral land left, hoarding army only loses slowly: their general
     # is the one remaining way to win, so press even from behind.
-    if exhausted and (strong or boxed_in):
+    if (boxed_in or ready) and (strong or boxed_in):
         target = enemy_general or press_target(board)
         if target is not None:
             return "press", target
