@@ -35,8 +35,14 @@ CONTACT_NEAR = 6
 # Visible proximity is not enough warning: an opponent masses out of sight and
 # arrives faster than army can be gathered back at one move per tick. Hold a
 # standing garrison as a share of the opponent's total army, which scores
-# reports through the fog. It self-scales, so the opening is unaffected.
-GARRISON_SHARE = 0.35
+# reports through the fog.
+GARRISON_SHARE = 0.25
+
+# Their army grows with their land, far faster than the general's +1 per two
+# ticks, so an uncapped reserve outruns the general and freezes it for the rest
+# of the game. Capping against our own army keeps a garrison we can actually
+# afford: the general moves again once it holds enough of our total.
+GARRISON_CAP_OF_MINE = 0.20
 
 # A neutral city costs 40-50 army and repays ~1.6x over a median 242-tick game,
 # against ~2-3x for the same army spent on land. Only worth it once established

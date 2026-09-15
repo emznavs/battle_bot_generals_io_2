@@ -144,6 +144,28 @@ def test_accounts_for_moves_already_queued_on_the_server():
     assert any(move["from"] == general for move in without), "sanity: free to use it"
 
 
+def test_reserve_never_freezes_the_general():
+    """A reserve the general can never leave behind stops it expanding forever."""
+    frame = blank_frame(tick=400)
+    general = 12 * W + 12
+    frame["terrain"][general] = GENERAL
+    own(frame, general, 220)
+    for offset in (-1, 1, -W, W):
+        own(frame, general + offset, 1)
+    # Opponent far ahead on army, as when they out-expand us.
+    own(frame, 3 * W + 3, 60, player=1)
+    frame["scores"] = [{"army": 500, "land": 95}, {"army": 1040, "land": 200}]
+
+    board = Board(frame, 0)
+    reserve = defence_reserve(board, general)
+    assert reserve <= board.army(general), (
+        f"reserve {reserve} exceeds the general's {board.army(general)} army"
+    )
+    moves, _ = plan(board, 3)
+    assert moves, "a 220-army general must still be able to act"
+    assert_legal(board, moves)
+
+
 def test_skips_neutral_cities_it_cannot_afford():
     frame = blank_frame(tick=200)
     general = 8 * W + 8

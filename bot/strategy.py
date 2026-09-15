@@ -4,6 +4,7 @@ from .config import (
     CITY_MIN_TICK,
     CONTACT_MID,
     CONTACT_NEAR,
+    GARRISON_CAP_OF_MINE,
     GARRISON_SHARE,
     GENERAL_RUN_MIN,
     IMPASSABLE,
@@ -119,14 +120,18 @@ def defence_reserve(board, general):
 
     # scores is not fog-filtered: army climbing without land means they are
     # massing out of sight rather than expanding.
-    foe = board.foe_score()
     mine = board.my_score()
+    foe = board.foe_score()
     if foe["land"] and mine["land"]:
         foe_ratio = foe["army"] / foe["land"]
         my_ratio = mine["army"] / max(1, mine["land"])
         if foe_ratio > my_ratio * STACK_RATIO_ALARM:
             reserve = max(reserve, RESERVE_MID)
-    return reserve
+
+    # The general only moves once it can leave the reserve behind, so an
+    # unaffordable reserve is a permanent freeze rather than a defence.
+    affordable = max(RESERVE_NEAR, int(GARRISON_CAP_OF_MINE * mine["army"]))
+    return min(reserve, affordable)
 
 
 def strike_plan(board, enemy_general):
