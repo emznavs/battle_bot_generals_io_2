@@ -6,6 +6,7 @@ from .config import (
     CONTACT_MID,
     CONTACT_NEAR,
     GARRISON_CAP_OF_MINE,
+    GARRISON_MIN_TICK,
     GARRISON_SHARE,
     GENERAL_RUN_MIN,
     IMPASSABLE,
@@ -107,10 +108,10 @@ def defence_reserve(board, general):
     if not board.enemy_tiles():
         return RESERVE_FAR
 
-    foe_army = board.foe_score()["army"]
-    reserve = max(
-        RESERVE_FAR, threat_to(board, general), int(GARRISON_SHARE * foe_army)
-    )
+    reserve = max(RESERVE_FAR, threat_to(board, general))
+    if board.tick >= GARRISON_MIN_TICK:
+        standing = int(GARRISON_SHARE * board.foe_score()["army"])
+        reserve = max(reserve, standing)
 
     dist = board.distances([general])
     nearest = min((dist[i] for i in board.enemy_tiles() if dist[i] >= 0), default=-1)

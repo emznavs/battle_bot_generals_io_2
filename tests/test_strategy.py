@@ -196,6 +196,24 @@ def test_walks_a_big_stack_to_an_affordable_city():
     assert_legal(board, moves)
 
 
+def test_early_contact_does_not_freeze_the_opening():
+    """A distant enemy sighting must not switch the midgame garrison on at t80."""
+    frame = blank_frame(tick=80)
+    general = 5 * W + 5
+    frame["terrain"][general] = GENERAL
+    own(frame, general, 20)
+    for offset in (-1, 1, -W, W):
+        own(frame, general + offset, 1)
+    own(frame, 5 * W + 20, 30, player=1)
+    frame["scores"] = [{"army": 30, "land": 19}, {"army": 90, "land": 40}]
+
+    board = Board(frame, 0)
+    assert defence_reserve(board, general) <= 1, "no approaching stack, no reserve"
+    moves, _ = plan(board, 2)
+    assert moves, "a 20-army general with a distant enemy must keep expanding"
+    assert_legal(board, moves)
+
+
 def test_skips_neutral_cities_it_cannot_afford():
     frame = blank_frame(tick=200)
     general = 8 * W + 8

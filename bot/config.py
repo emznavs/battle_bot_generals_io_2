@@ -38,6 +38,13 @@ CONTACT_NEAR = 6
 # reports through the fog.
 GARRISON_SHARE = 0.25
 
+# Early contact against a fast expander switched the standing garrison on
+# while it was most of the general's army, and between land-growth ticks the
+# general is the only mobile unit, so the bot planned nothing for forty ticks
+# and was run off the map. Real approaching stacks still count from tick 0
+# through threat_to; the standing share is a midgame instrument.
+GARRISON_MIN_TICK = 150
+
 # Their army grows with their land, far faster than the general's +1 per two
 # ticks, so an uncapped reserve outruns the general and freezes it for the rest
 # of the game. Capping against our own army keeps a garrison we can actually
