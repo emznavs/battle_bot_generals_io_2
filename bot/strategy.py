@@ -293,9 +293,12 @@ def decide_mode(board, general, allow_city=False):
         return "hunt", enemy_general
 
     room = len(_neutral_targets(board, allow_city))
-    exhausted = room < PRESS_NEUTRAL_FLOOR or board.tick >= PRESS_MIN_TICK
+    boxed_in = room < PRESS_NEUTRAL_FLOOR
+    exhausted = boxed_in or board.tick >= PRESS_MIN_TICK
     strong = board.my_score()["army"] >= board.foe_score()["army"] * PRESS_ARMY_RATIO
-    if exhausted and strong:
+    # With no neutral land left, hoarding army only loses slowly: their general
+    # is the one remaining way to win, so press even from behind.
+    if exhausted and (strong or boxed_in):
         target = enemy_general or press_target(board)
         if target is not None:
             return "press", target
