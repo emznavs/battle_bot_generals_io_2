@@ -300,6 +300,33 @@ def test_answers_a_stack_at_the_general_before_it_strikes():
     )
 
 
+def test_gathers_a_guard_when_the_opponent_is_massing():
+    """They hold twice our army per tile: bring the biggest field stack home."""
+    frame = blank_frame(tick=400)
+    general = 5 * W + 5
+    frame["terrain"][general] = GENERAL
+    own(frame, general, 50)
+    for offset in (-1, 1, -W, W):
+        own(frame, general + offset, 2)
+    stack = 5 * W + 12
+    own(frame, stack, 30)
+    for step in range(6, 12):
+        own(frame, 5 * W + step, 3)
+    own(frame, 20 * W + 20, 40, player=1)
+    frame["scores"] = [{"army": 400, "land": 100}, {"army": 800, "land": 100}]
+
+    board = Board(frame, 0)
+    mode, focus = decide_mode(board, general)
+    assert mode == "gather" and focus == general, mode
+    moves, _ = plan(board, 1)
+    assert moves and moves[0]["from"] == stack and moves[0]["to"] == stack - 1, moves
+
+    # Once a guard sits beside the general, stop gathering.
+    frame["armies"][general + 1] = 25
+    mode, _ = decide_mode(Board(frame, 0), general)
+    assert mode == "expand", mode
+
+
 def test_skips_neutral_cities_it_cannot_afford():
     frame = blank_frame(tick=200)
     general = 8 * W + 8

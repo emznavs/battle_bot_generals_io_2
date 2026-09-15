@@ -71,6 +71,15 @@ STACK_RATIO_ALARM = 2.5
 # parity: the attacker can reinforce, and ties resolve badly for the defender.
 DEFEND_RATIO = 0.85
 
+# Four losses shared one shape: a massed stack at our door and nothing to
+# bring home, with our army spread over 150 tiles. When their army per tile
+# exceeds ours by this much, walk the biggest field stack home along the
+# collecting path until a guard sits beside the general. Costs expansion
+# only while they are actually massing.
+GATHER_RATIO = 1.2
+GATHER_MIN_TICK = 150
+GUARD_MIN = 20
+
 # Winning the economy is not winning: a game surviving 1,200 ticks is a draw.
 # Once there is little neutral land left, drive into enemy territory to find and
 # kill the general rather than shuffling a won board.

@@ -9,7 +9,10 @@ from .config import (
     GARRISON_CAP_OF_MINE,
     GARRISON_MIN_TICK,
     GARRISON_SHARE,
+    GATHER_MIN_TICK,
+    GATHER_RATIO,
     GENERAL_RUN_MIN,
+    GUARD_MIN,
     IMPASSABLE,
     MARCH_FAT_ARMY,
     PRESS_ENTER_RATIO,
@@ -299,6 +302,10 @@ def _walk(sim, targets, general, reserve, mode="expand", exclude=None):
     for source in sim.my_tiles():
         if source == exclude or sim.armies[source] < 2 or dist[source] < 1:
             continue
+        # A gathering stack stops beside the general as a mobile guard rather
+        # than merging into a garrison the half-move rule would then freeze.
+        if mode == "gather" and dist[source] <= 1:
+            continue
         half = _split(sim, source, general, reserve)
         if half is None:
             continue
@@ -313,7 +320,7 @@ def _walk(sim, targets, general, reserve, mode="expand", exclude=None):
         if best_score is None or score > best_score:
             best_score = score
             best_move = {"from": source, "to": path[1], "half": bool(half)}
-    if best_move and mode in ("press", "hunt"):
+    if best_move and mode in ("press", "hunt", "gather"):
         step = _collecting_step(sim, best_move["from"], targets)
         if step is not None:
             best_move["to"] = step
@@ -376,7 +383,7 @@ def _next_move(sim, general, reserve, mode, focus, allow_city):
         move = _walk(sim, [focus], general, reserve, mode)
         if move:
             return move
-    if mode == "defend":
+    if mode in ("defend", "gather"):
         move = _walk(sim, [focus], general, reserve, mode, exclude=general)
         if move:
             return move
@@ -420,7 +427,23 @@ def decide_mode(board, general, allow_city=False, previous="expand"):
         target = enemy_general or press_target(board)
         if target is not None:
             return "press", target
+    if board.tick >= GATHER_MIN_TICK and out_concentrated(board) and not guard_in_place(board, general):
+        return "gather", general
     return "expand", None
+
+
+def out_concentrated(board):
+    """Their army per tile exceeds ours: they are massing while we spread."""
+    mine, foe = board.my_score(), board.foe_score()
+    if not mine["land"] or not foe["land"]:
+        return False
+    return foe["army"] / foe["land"] > (mine["army"] / mine["land"]) * GATHER_RATIO
+
+
+def guard_in_place(board, general):
+    return any(
+        board.mine(n) and board.army(n) >= GUARD_MIN for n in board.neighbours[general]
+    )
 
 
 def plan(board, want, pending=(), previous="expand"):
