@@ -21,7 +21,12 @@ def get(path, token):
         with urllib.request.urlopen(request, timeout=20) as response:
             return json.loads(response.read() or "null")
     except urllib.error.HTTPError as error:
-        body = json.loads(error.read() or "{}")
+        raw = error.read() or b""
+        try:
+            body = json.loads(raw)
+        except ValueError:
+            # Azure returns an HTML page when the container app itself is down.
+            body = {"code": "arena_unreachable", "message": raw[:80].decode(errors="replace")}
         raise SystemExit(f"HTTP {error.code}: {body.get('code')}: {body.get('message')}")
 
 

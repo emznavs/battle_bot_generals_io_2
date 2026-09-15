@@ -42,6 +42,8 @@ GARRISON_SHARE = 0.25
 # ticks, so an uncapped reserve outruns the general and freezes it for the rest
 # of the game. Capping against our own army keeps a garrison we can actually
 # afford: the general moves again once it holds enough of our total.
+# A half move leaves ceil(army/2), so the general needs twice the reserve to
+# act at all. 0.20 already means holding 40% of our total army; higher freezes.
 GARRISON_CAP_OF_MINE = 0.20
 
 # A neutral city costs 40-50 army and repays ~1.6x over a median 242-tick game,
@@ -59,7 +61,14 @@ STACK_RATIO_ALARM = 2.5
 # kill the general rather than shuffling a won board.
 PRESS_MIN_TICK = 250
 PRESS_NEUTRAL_FLOOR = 12
-PRESS_ARMY_RATIO = 0.9
+# Requiring near-parity meant a bot slightly behind on army never attacked at
+# all: one loss ran 600 ticks in expand mode while the opponent massed and
+# walked in. Pressing reveals their territory and finds the general.
+PRESS_ARMY_RATIO = 0.7
+
+# Bound the walk: a city run runs ahead of captures, so a long walk is a long
+# expansion stall.
+CITY_MAX_WALK = 8
 
 RECONNECT_BACKOFF_MAX = 10
 

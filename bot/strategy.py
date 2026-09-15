@@ -1,6 +1,7 @@
 from .config import (
     CITY,
     CITY_ARMY_MARGIN,
+    CITY_MAX_WALK,
     CITY_MIN_TICK,
     CONTACT_MID,
     CONTACT_NEAR,
@@ -255,7 +256,7 @@ def _city_run(sim, general, reserve):
     dist = sim.board.distances(cities)
     best = None
     for source in sim.my_tiles():
-        if sim.armies[source] < 2 or dist[source] < 1:
+        if sim.armies[source] < 2 or not 1 <= dist[source] <= CITY_MAX_WALK:
             continue
         half = _split(sim, source, general, reserve)
         if half is None:
