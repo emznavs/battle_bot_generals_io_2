@@ -1,0 +1,16 @@
+# Credentials — never commit
+.env
+*.token
+secrets/
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+
+# Runtime artifacts
+logs/
+replays/
+*.log
