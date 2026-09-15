@@ -66,6 +66,11 @@ CITY_ARMY_MARGIN = 20
 # rush. scores is not fog-filtered, so this is visible through the fog.
 STACK_RATIO_ALARM = 2.5
 
+# A 208 stack sat adjacent to a 225 general with the bot still expanding,
+# because the arrival army was just under the garrison. Start defending below
+# parity: the attacker can reinforce, and ties resolve badly for the defender.
+DEFEND_RATIO = 0.85
+
 # Winning the economy is not winning: a game surviving 1,200 ticks is a draw.
 # Once there is little neutral land left, drive into enemy territory to find and
 # kill the general rather than shuffling a won board.

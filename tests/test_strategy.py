@@ -273,6 +273,33 @@ def test_keeps_expanding_while_the_map_is_still_open():
     assert mode == "expand", f"open map with a lead should expand, got {mode}"
 
 
+def test_answers_a_stack_at_the_general_before_it_strikes():
+    frame = blank_frame(tick=500)
+    general = 12 * W + 8
+    frame["terrain"][general] = GENERAL
+    own(frame, general, 100)
+    own(frame, general + 1, 90, player=1)
+    own(frame, general - 1, 8)
+    frame["scores"] = [{"army": 300, "land": 60}, {"army": 400, "land": 60}]
+
+    board = Board(frame, 0)
+    mode, _ = decide_mode(board, general)
+    assert mode == "defend", f"a 90 beside a 100 garrison must trigger defend, got {mode}"
+    moves, _ = plan(board, 1)
+    assert moves and moves[0] == {"from": general - 1, "to": general, "half": False}, (
+        f"the neighbour should step onto the general first: {moves}"
+    )
+
+    frame["owners"][general - 1] = NEUTRAL
+    frame["armies"][general - 1] = 0
+    frame["armies"][general] = 200
+    board = Board(frame, 0)
+    moves, _ = plan(board, 1)
+    assert moves and moves[0] == {"from": general, "to": general + 1, "half": True}, (
+        f"with no guard, half the garrison should remove the stack: {moves}"
+    )
+
+
 def test_skips_neutral_cities_it_cannot_afford():
     frame = blank_frame(tick=200)
     general = 8 * W + 8

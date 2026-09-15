@@ -5,6 +5,7 @@ from .config import (
     CITY_MIN_TICK,
     CONTACT_MID,
     CONTACT_NEAR,
+    DEFEND_RATIO,
     GARRISON_CAP_OF_MINE,
     GARRISON_MIN_TICK,
     GARRISON_SHARE,
@@ -226,7 +227,11 @@ def _best_capture(sim, general, reserve, allow_city):
                 continue
             value = 100.0
             if sim.owners[target] == sim.foe:
-                value += 25.0
+                # Taking their tile costs its defenders plus one. That trade
+                # compounds a lead and bleeds a deficit: on equal land we fell
+                # to 1075 army against 1630 by attacking tiles while weaker.
+                weaker = sim.board.my_score()["army"] < sim.board.foe_score()["army"]
+                value += -25.0 if weaker else 25.0
             if sim.terrain[target] == UNSEEN:
                 value += 5.0
             if neutral_city:
@@ -331,7 +336,42 @@ def _collecting_step(sim, source, targets):
     return path[1] if len(path) >= 2 else None
 
 
+def _defend_locally(sim, general, reserve, emergency):
+    """Answer a stack adjacent to the general with the priority rules.
+
+    Friendly reinforcement resolves before an enemy attack in the same tick,
+    so a neighbour stepping onto the general lands first. Failing that, a
+    half-move sortie removes the stack while the other half stays home: a 208
+    stack grew from 15 beside our general over 160 ticks while we did nothing.
+    Outside an emergency the half left behind must still cover the reserve.
+    """
+    if general is None:
+        return None
+    adjacent = [(sim.armies[n], n) for n in sim.neighbours[general] if sim.owners[n] == sim.foe]
+    if not adjacent:
+        return None
+    guards = [
+        (sim.armies[n], n)
+        for n in sim.neighbours[general]
+        if sim.owners[n] == sim.me and sim.armies[n] >= 2
+    ]
+    if guards:
+        return {"from": max(guards)[1], "to": general, "half": False}
+    garrison = sim.armies[general]
+    target_army, target = max(adjacent)
+    sent = garrison // 2
+    remaining = garrison - sent
+    others = max((army for army, n in adjacent if n != target), default=0)
+    floor = others + 1 if emergency else max(others + 1, reserve)
+    if sent > target_army and remaining >= floor:
+        return {"from": general, "to": target, "half": True}
+    return None
+
+
 def _next_move(sim, general, reserve, mode, focus, allow_city):
+    move = _defend_locally(sim, general, reserve, emergency=(mode == "defend"))
+    if move:
+        return move
     if mode in ("hunt", "press") and focus is not None:
         move = _walk(sim, [focus], general, reserve, mode)
         if move:
@@ -359,7 +399,7 @@ def decide_mode(board, general, allow_city=False, previous="expand"):
     """
     if general is None:
         return "expand", None
-    if threat_to(board, general) > board.army(general):
+    if threat_to(board, general) > board.army(general) * DEFEND_RATIO:
         return "defend", general
     enemy_general = board.enemy_general()
     if enemy_general is not None and strike_plan(board, enemy_general) is not None:
