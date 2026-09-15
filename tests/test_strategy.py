@@ -351,6 +351,22 @@ def test_expansion_leaves_the_guard_in_place():
     assert all(move["from"] != guard for move in moves), f"guard was moved: {moves}"
 
 
+def test_sortie_removes_a_small_stack_despite_a_large_reserve():
+    """t241 vs SolomINT: 28 beside an 89 garrison, reserve 60, nothing else near."""
+    frame = blank_frame(tick=241)
+    general = 16 * W + 6
+    frame["terrain"][general] = GENERAL
+    own(frame, general, 89)
+    own(frame, general - W, 28, player=1)
+    own(frame, general - 1, 1, player=1)
+    frame["scores"] = [{"army": 302, "land": 103}, {"army": 344, "land": 125}]
+
+    board = Board(frame, 0)
+    assert defence_reserve(board, general) >= 45, "reserve must be the binding constraint here"
+    moves, _ = plan(board, 1)
+    assert moves and moves[0] == {"from": general, "to": general - W, "half": True}, moves
+
+
 def test_skips_neutral_cities_it_cannot_afford():
     frame = blank_frame(tick=200)
     general = 8 * W + 8

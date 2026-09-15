@@ -369,8 +369,16 @@ def _defend_locally(sim, general, reserve, emergency):
     target_army, target = max(adjacent)
     sent = garrison // 2
     remaining = garrison - sent
-    others = max((army for army, n in adjacent if n != target), default=0)
-    floor = others + 1 if emergency else max(others + 1, reserve)
+    # The half left behind must beat the next threat in range, not an
+    # abstract reserve: a 28 beside the general is what the reserve is for,
+    # and refusing to remove it is how 28 became 208.
+    dist = sim.board.distances([general])
+    next_threat = 0
+    for index, owner in enumerate(sim.owners):
+        if owner != sim.foe or index == target or not 0 <= dist[index] <= CONTACT_MID:
+            continue
+        next_threat = max(next_threat, sim.armies[index] - dist[index])
+    floor = next_threat + 1 if emergency else max(next_threat + 1, RESERVE_NEAR)
     if sent > target_army and remaining >= floor:
         return {"from": general, "to": target, "half": True}
     return None
