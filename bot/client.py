@@ -138,7 +138,7 @@ class ArenaBot:
             return
 
         board = Board(frame, self.player)
-        moves, mode = plan(board, want, message["queued_moves"])
+        moves, mode = plan(board, want, message["queued_moves"], self.mode)
         self.planned_tick = frame["tick"]
         self.mode = mode
 

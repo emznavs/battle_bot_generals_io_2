@@ -214,6 +214,24 @@ def test_early_contact_does_not_freeze_the_opening():
     assert_legal(board, moves)
 
 
+def test_press_needs_an_edge_to_start_but_less_to_continue():
+    """At 0.8x their army: no fresh press, but an ongoing press carries on."""
+    frame = blank_frame(tick=400)
+    general = 12 * W + 2
+    frame["terrain"][general] = GENERAL
+    own(frame, general, 60)
+    own(frame, 12 * W + 3, 40)
+    for step in range(10, 20):
+        own(frame, 12 * W + step, 5, player=1)
+    frame["scores"] = [{"army": 100, "land": 2}, {"army": 125, "land": 10}]
+
+    board = Board(frame, 0)
+    fresh, _ = decide_mode(board, general, False, previous="expand")
+    ongoing, _ = decide_mode(board, general, False, previous="press")
+    assert fresh != "press", f"0.8x is not enough of an edge to start: {fresh}"
+    assert ongoing == "press", f"0.8x should still continue an attack: {ongoing}"
+
+
 def test_skips_neutral_cities_it_cannot_afford():
     frame = blank_frame(tick=200)
     general = 8 * W + 8

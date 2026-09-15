@@ -68,10 +68,13 @@ STACK_RATIO_ALARM = 2.5
 # kill the general rather than shuffling a won board.
 PRESS_MIN_TICK = 250
 PRESS_NEUTRAL_FLOOR = 12
-# Requiring near-parity meant a bot slightly behind on army never attacked at
-# all: one loss ran 600 ticks in expand mode while the opponent massed and
-# walked in. Pressing reveals their territory and finds the general.
-PRESS_ARMY_RATIO = 0.7
+# Attacking costs army on every enemy tile crossed, so a press that does not
+# find the general bleeds. One threshold cannot serve both ends: a bot at 0.76x
+# never attacked and died to a masser, while a bot that engaged at 1.39x kept
+# pressing as its lead drained to parity. Need a real edge to start; tolerate
+# the cost of attacking to continue; stop and regroup below that.
+PRESS_ENTER_RATIO = 0.9
+PRESS_STAY_RATIO = 0.75
 
 # Bound the walk: a city run runs ahead of captures, so a long walk is a long
 # expansion stall.

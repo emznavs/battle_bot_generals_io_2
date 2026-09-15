@@ -10,9 +10,10 @@ from .config import (
     GARRISON_SHARE,
     GENERAL_RUN_MIN,
     IMPASSABLE,
-    PRESS_ARMY_RATIO,
+    PRESS_ENTER_RATIO,
     PRESS_MIN_TICK,
     PRESS_NEUTRAL_FLOOR,
+    PRESS_STAY_RATIO,
     SATELLITE_RUN_MIN,
     RESERVE_FAR,
     RESERVE_MID,
@@ -328,8 +329,12 @@ def _next_move(sim, general, reserve, mode, focus, allow_city):
     return _walk(sim, _expansion_targets(sim, allow_city), general, reserve, mode)
 
 
-def decide_mode(board, general, allow_city=False):
-    """Re-derived every frame; a v3 general trade moves our general mid-game."""
+def decide_mode(board, general, allow_city=False, previous="expand"):
+    """Re-derived every frame; a v3 general trade moves our general mid-game.
+
+    `previous` only sets the press threshold: a lower bar to continue an attack
+    than to start one, so a press neither bleeds to parity nor flaps.
+    """
     if general is None:
         return "expand", None
     if threat_to(board, general) > board.army(general):
@@ -341,7 +346,8 @@ def decide_mode(board, general, allow_city=False):
     room = len(_neutral_targets(board, allow_city))
     boxed_in = room < PRESS_NEUTRAL_FLOOR
     exhausted = boxed_in or board.tick >= PRESS_MIN_TICK
-    strong = board.my_score()["army"] >= board.foe_score()["army"] * PRESS_ARMY_RATIO
+    ratio = PRESS_STAY_RATIO if previous in ("press", "hunt") else PRESS_ENTER_RATIO
+    strong = board.my_score()["army"] >= board.foe_score()["army"] * ratio
     # With no neutral land left, hoarding army only loses slowly: their general
     # is the one remaining way to win, so press even from behind.
     if exhausted and (strong or boxed_in):
@@ -351,11 +357,11 @@ def decide_mode(board, general, allow_city=False):
     return "expand", None
 
 
-def plan(board, want, pending=()):
+def plan(board, want, pending=(), previous="expand"):
     general = board.my_general()
     reserve = defence_reserve(board, general)
     city_ready = board.tick >= CITY_MIN_TICK
-    mode, focus = decide_mode(board, general, city_ready)
+    mode, focus = decide_mode(board, general, city_ready, previous)
     allow_city = city_ready and mode == "expand"
 
     sim = _Sim(board)
